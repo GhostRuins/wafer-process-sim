@@ -1,0 +1,96 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 8px;
+}
+
+.mapRow {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.svgWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  max-height: 100%;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  max-height: min(52vh, 380px);
+  height: auto;
+}
+
+.legend {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 200px;
+}
+
+.legendTrack {
+  height: 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+
+.legendMeta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 200;
+  pointer-events: none;
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  min-width: 180px;
+}
+
+.tooltipRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.tooltipRow:first-child {
+  margin-top: 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+}
+
+.badgePass {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent-teal);
+  border: 1px solid rgba(0, 212, 170, 0.35);
+}
+
+.badgeFail {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}

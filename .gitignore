@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.env
+*.egg-info/
+
+# Data — too large for GitHub
+data/
+ml/artifacts/
+
+# But DO commit these small reference files
+!ml/artifacts/model_metrics.json
+!ml/artifacts/feature_names.json
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Misc
+.DS_Store
+*.log
+.pytest_cache/
