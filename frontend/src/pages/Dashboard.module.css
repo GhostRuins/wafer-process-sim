@@ -321,6 +321,105 @@
   gap: 8px;
   margin-bottom: 2px;
   justify-content: flex-start;
+  align-items: center;
+}
+
+.spcActionBtn {
+  min-height: 30px;
+  height: auto;
+  width: auto;
+  min-width: 0;
+  padding: 6px 10px;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.spcPlaybackBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  flex-wrap: wrap;
+}
+
+.spcPlayBtn,
+.spcStopBtn,
+.spcReplayBtn {
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  border-radius: 4px;
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+
+.spcPlayBtn {
+  min-width: 80px;
+  color: var(--accent-teal);
+}
+
+.spcStopBtn {
+  color: #ef4444;
+}
+
+.spcReplayBtn {
+  color: var(--text-muted);
+}
+
+.spcReplayBtnDone {
+  border-color: var(--accent-teal);
+  color: var(--accent-teal);
+}
+
+.spcProgressWrap {
+  min-width: 190px;
+  flex: 1;
+}
+
+.spcProgressText {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.spcProgressTrack {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-surface);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.spcProgressFill {
+  height: 100%;
+  background: var(--accent-teal);
+}
+
+.spcSpeedPills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.spcSpeedPill {
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.spcSpeedPillActive {
+  background: var(--accent-teal);
+  color: var(--bg-primary);
+  border-color: var(--accent-teal);
 }
 
 .spcChartFill {

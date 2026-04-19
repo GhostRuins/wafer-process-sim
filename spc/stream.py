@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import asyncio
-import json
 from collections import deque
 from datetime import datetime
 from typing import Any
-
-from fastapi import WebSocket
 
 from spc.engine import SPCPoint, SPCViolation, analyze_series
 
@@ -15,36 +11,6 @@ def _np_array(vals: list[float]):
     import numpy as np
 
     return np.asarray(vals, dtype=np.float64)
-
-
-class SPCWebSocketHub:
-    def __init__(self) -> None:
-        self._clients: set[WebSocket] = set()
-        self._lock = asyncio.Lock()
-
-    async def connect(self, ws: WebSocket) -> None:
-        await ws.accept()
-        async with self._lock:
-            self._clients.add(ws)
-
-    async def disconnect(self, ws: WebSocket) -> None:
-        async with self._lock:
-            self._clients.discard(ws)
-
-    async def broadcast(self, message: dict[str, Any]) -> None:
-        payload = json.dumps(message, default=str)
-        async with self._lock:
-            clients = list(self._clients)
-        stale: list[WebSocket] = []
-        for ws in clients:
-            try:
-                await ws.send_text(payload)
-            except Exception:
-                stale.append(ws)
-        if stale:
-            async with self._lock:
-                for ws in stale:
-                    self._clients.discard(ws)
 
 
 class SPCStreamProcessor:

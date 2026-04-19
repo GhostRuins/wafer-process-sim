@@ -97,22 +97,6 @@ class SPCIngestResponse(BaseModel):
     violations: list[SPCViolationDTO] = Field(default_factory=list)
 
 
-class SPCReplayRequest(BaseModel):
-    metric: SPCMetric
-    start: datetime
-    end: datetime
-    tool_id: str | None = None
-    replay_speed: Literal["1x", "10x", "100x"] = "10x"
-    reset_state: bool = True
-    ewma_enabled: bool = True
-
-
-class SPCReplayResponse(BaseModel):
-    replayed_points: int
-    emitted_violations: int
-    replay_speed: str
-
-
 class SPCStateSnapshotItem(BaseModel):
     metric: str
     series_id: str

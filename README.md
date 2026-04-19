@@ -48,6 +48,27 @@ Key finding: the lot-stratified vs random CV gap is only `0.0014`, confirming th
 - Prediction panel with scenario inputs, ensemble forecast, confidence interval, and explainability context
 - Run explorer with lot/tool navigation and CSV export
 
+## SPC Engine (Batch + Live Stream)
+- **Batch analysis** via `POST /api/spc/analyze` with Nelson rules + EWMA outputs.
+- **Live streaming** via WebSocket `ws://localhost:8000/ws/spc` with interactive playback controls in the dashboard.
+- **Supported stream controls**: play, pause, stop, replay, and speed changes (`0.5x`, `1x`, `5x`, `10x`, `Max`) without restarting the server.
+- **Stream payloads** are JSON-safe (datetime and numpy values normalized before transport).
+
+### Quick API examples
+Run batch SPC analysis:
+```bash
+curl -X POST "http://localhost:8000/api/spc/analyze" \
+  -H "Content-Type: application/json" \
+  -d "{\"metric\":\"wafer_yield\",\"start\":\"2026-01-01T00:00:00Z\",\"end\":\"2026-02-28T23:59:59Z\",\"include_points\":true}"
+```
+
+Inspect stream processor state:
+```bash
+curl "http://localhost:8000/api/spc/stream/state"
+```
+
+Open the dashboard, switch the right panel to **SPC mode**, choose **Stream**, then use the playback bar to run and control live replay.
+
 ## Setup
 1. **Clone the repository**
    ```bash

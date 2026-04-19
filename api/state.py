@@ -11,7 +11,7 @@ from typing import Any
 import polars as pl
 from loguru import logger
 
-from spc.stream import SPCStreamProcessor, SPCWebSocketHub
+from spc.stream import SPCStreamProcessor
 from wafer_sim.physics import init_physics
 
 
@@ -30,7 +30,6 @@ class AppState:
     yield_stress_factor: float = 35.0
     physics_seed: int = 42
     spc_processor: Any = None
-    spc_hub: Any = None
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -62,7 +61,6 @@ def init_app_state() -> AppState:
         yield_stress_factor=yield_stress,
         physics_seed=seed,
         spc_processor=SPCStreamProcessor(),
-        spc_hub=SPCWebSocketHub(),
     )
 
     sum_path = data_dir / "wafer_summary.parquet"

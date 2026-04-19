@@ -1,13 +1,12 @@
-"""SPC batch + stream routes."""
+"""SPC batch + ingest routes."""
 
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime
 
 import numpy as np
 import polars as pl
-from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException
 
 from api.deps import AppStateDep
 from api.schemas_spc import (
@@ -16,8 +15,6 @@ from api.schemas_spc import (
     SPCIngestRequest,
     SPCIngestResponse,
     SPCPointDTO,
-    SPCReplayRequest,
-    SPCReplayResponse,
     SPCStateSnapshotItem,
     SPCSummaryDTO,
     SPCViolationDTO,
@@ -135,15 +132,6 @@ async def ingest_spc(body: SPCIngestRequest, state: AppStateDep) -> SPCIngestRes
         ewma_L=body.ewma_L,
         ewma_enabled=body.ewma_enabled,
     )
-    await state.spc_hub.broadcast(
-        {
-            "type": "spc.alert" if violations else "spc.point",
-            "metric": body.metric,
-            "series_id": body.series_id,
-            "point": point.__dict__,
-            "violations": [v.__dict__ for v in violations],
-        }
-    )
     return SPCIngestResponse(
         accepted=True,
         point=SPCPointDTO(**point.__dict__),
@@ -151,61 +139,6 @@ async def ingest_spc(body: SPCIngestRequest, state: AppStateDep) -> SPCIngestRes
     )
 
 
-@router.post("/stream/replay", response_model=SPCReplayResponse, summary="Replay historical runs through stream SPC")
-async def replay_spc(body: SPCReplayRequest, state: AppStateDep) -> SPCReplayResponse:
-    if body.start > body.end:
-        raise HTTPException(status_code=400, detail="start must be <= end")
-    df, col = _collect_series(
-        state,
-        metric=body.metric,
-        start=body.start,
-        end=body.end,
-        tool_id=body.tool_id,
-    )
-    if body.reset_state:
-        state.spc_processor.reset()
-    rows = df.to_dicts()
-    speed_factor = {"1x": 1.0, "10x": 10.0, "100x": 100.0}[body.replay_speed]
-    sleep_s = 0.2 / speed_factor
-    emitted = 0
-    for r in rows:
-        series_id = str(r.get("tool_id") or "all_tools")
-        point, violations = state.spc_processor.ingest(
-            metric=body.metric,
-            series_id=series_id,
-            timestamp=r["timestamp"],
-            value=float(r[col]),
-            ewma_enabled=body.ewma_enabled,
-        )
-        emitted += len(violations)
-        await state.spc_hub.broadcast(
-            {
-                "type": "spc.alert" if violations else "spc.point",
-                "metric": body.metric,
-                "series_id": series_id,
-                "point": point.__dict__,
-                "violations": [v.__dict__ for v in violations],
-            }
-        )
-        await asyncio.sleep(sleep_s)
-    return SPCReplayResponse(
-        replayed_points=len(rows),
-        emitted_violations=emitted,
-        replay_speed=body.replay_speed,
-    )
-
-
 @router.get("/stream/state", response_model=list[SPCStateSnapshotItem], summary="Get stream SPC state")
 async def stream_state(state: AppStateDep) -> list[SPCStateSnapshotItem]:
     return [SPCStateSnapshotItem(**r) for r in state.spc_processor.snapshot()]
-
-
-@router.websocket("/stream/ws")
-async def spc_ws(websocket: WebSocket, state: AppStateDep, metric: str = Query("wafer_yield")):
-    await state.spc_hub.connect(websocket)
-    try:
-        await websocket.send_json({"type": "spc.connected", "metric": metric})
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        await state.spc_hub.disconnect(websocket)
