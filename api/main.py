@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-from api.routers import optimization, prediction, runs, simulation
+from api.routers import optimization, prediction, runs, simulation, spc
 from api.schemas import HealthResponse
 from api.state import init_app_state
 
@@ -55,6 +55,7 @@ app.include_router(runs.process_router, prefix="/api")
 app.include_router(simulation.router, prefix="/api")
 app.include_router(prediction.router, prefix="/api")
 app.include_router(optimization.router, prefix="/api")
+app.include_router(spc.router, prefix="/api")
 
 
 @app.get("/health", response_model=HealthResponse, summary="Health check", tags=["data"])

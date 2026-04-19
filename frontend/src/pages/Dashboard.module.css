@@ -13,7 +13,7 @@
   min-height: 0;
   padding: 0 12px 12px;
   display: grid;
-  grid-template-columns: 40% 35% 25%;
+  grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   gap: 12px;
 }
@@ -58,6 +58,39 @@
   overflow: hidden;
 }
 
+.rightPanelToggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.toggleBtn {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-sans);
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.toggleBtnActive {
+  border-color: var(--accent-teal);
+  color: var(--accent-teal);
+  background: rgba(0, 212, 170, 0.08);
+}
+
+.rightPanelContent {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .panel {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -73,7 +106,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  padding: 14px;
+  gap: 10px;
   overflow: auto;
 }
 
@@ -84,29 +118,34 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin: 0 0 4px;
+  margin: 0;
 }
 
 .panelSubtitle {
   font-size: 11px;
   color: var(--text-muted);
-  margin: 0 0 8px;
+  margin: 0;
   opacity: 0.85;
 }
 
 .chartFill {
   flex: 1;
-  min-height: 140px;
+  min-height: 180px;
   width: 100%;
 }
 
 .explorerHeader {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px 12px;
-  margin-bottom: 10px;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  margin-bottom: 0;
   flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .explorerTitle {
@@ -148,7 +187,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   max-width: min(100%, 260px);
-  padding: 6px 10px;
+  padding: 7px 10px;
   border-radius: 4px;
   border: 1px solid var(--border);
   background-color: var(--bg-primary);
@@ -268,6 +307,50 @@
   margin-left: auto;
 }
 
+.spcRoot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.spcControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 2px;
+  justify-content: flex-start;
+}
+
+.spcChartFill {
+  flex: 1;
+  min-height: 280px;
+  width: 100%;
+}
+
+.spcSummaryRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  justify-content: flex-start;
+}
+
+.spcAlerts {
+  padding: 0;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.spcExplain {
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
 .pill {
   font-family: var(--font-sans);
   font-size: 11px;
@@ -290,10 +373,104 @@
   color: var(--accent-teal);
 }
 
+.waferContext {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.waferMetaGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(3, auto);
+  gap: 8px 12px;
+}
+
+.waferMetaChip {
+  background: var(--bg-surface);
+  border-radius: 4px;
+  padding: 6px 8px;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.waferMetaChipLabel {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+  line-height: 1.2;
+}
+
+.waferMetaChipValue {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.anomalyNominal {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.anomalyPill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: lowercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.waferYieldLine {
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  line-height: 1.35;
+}
+
+.waferYieldPctOk {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent-teal);
+}
+
+.waferYieldPctWarn {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent-red);
+}
+
+.waferYieldSep {
+  color: var(--text-muted);
+  opacity: 0.45;
+  font-size: 13px;
+}
+
+.waferYieldDies {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .dieCard {
   flex-shrink: 0;
   width: 100%;
-  max-width: 220px;
+  max-width: none;
+  max-height: 160px;
+  overflow-y: auto;
   padding: 10px 12px;
   border-radius: 6px;
   border: 1px solid var(--border);
@@ -313,8 +490,8 @@
   flex: 1;
   min-height: 0;
   display: flex;
-  flex-direction: row;
-  gap: 12px;
+  flex-direction: column;
+  gap: 0;
   align-items: stretch;
 }
 
@@ -324,23 +501,19 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  gap: 10px;
 }
 
-.dieCol {
-  flex-shrink: 0;
-  width: 200px;
+.waferMapFill {
+  flex: 1;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 1200px) {
   .waferBody {
     flex-direction: column;
-  }
-
-  .dieCol {
-    width: 100%;
-    max-width: none;
   }
 }
 

@@ -14,6 +14,7 @@ import {
 } from 'recharts'
 
 import { CorrelationMatrix } from '../components/CorrelationMatrix'
+import { SPCPanel } from '../components/SPCPanel'
 import type { DieData, WaferMetric } from '../components/WaferMap'
 import { WaferMap } from '../components/WaferMap'
 import { KPIBar } from '../components/KPIBar'
@@ -48,6 +49,40 @@ const METRIC_PILLS: { id: WaferMetric; label: string }[] = [
   { id: 'defect_density', label: 'Defect' },
   { id: 'die_yield', label: 'Yield' },
 ]
+
+function formatRunTimestamp(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const s = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(d)
+  return s.replace(',', '')
+}
+
+function shiftFromTimestamp(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  const h = d.getHours()
+  if (h >= 6 && h < 18) return 'day'
+  return 'night'
+}
+
+function displayTool(toolId: string): string {
+  const m = toolId.match(/_([A-C])$/i)
+  if (m) return `Tool ${m[1].toUpperCase()}`
+  return toolId || '—'
+}
+
+function displayLotId(lotId: string | undefined): string {
+  if (!lotId) return '—'
+  const parts = lotId.split(/[_/]/)
+  const last = parts[parts.length - 1]
+  return last && /^\d+$/.test(last) ? last.padStart(3, '0') : lotId
+}
 
 const TOUR_KEY = 'wafer_dashboard_toured'
 
@@ -368,6 +403,7 @@ function DashboardInner() {
   )
   const [metric, setMetric] = useState<WaferMetric>('film_thickness')
   const [selectedDie, setSelectedDie] = useState<DieData | null>(null)
+  const [rightPanelMode, setRightPanelMode] = useState<'prediction' | 'spc'>('prediction')
   const [tourOpen, setTourOpen] = useState(false)
   const [tourStep, setTourStep] = useState(0)
 
@@ -390,6 +426,10 @@ function DashboardInner() {
 
   const activeAnomalies = useMemo(
     () => sortedRuns.filter((r) => r.anomaly_injected).length,
+    [sortedRuns],
+  )
+  const tools = useMemo(
+    () => Array.from(new Set(sortedRuns.map((r) => r.tool_id))).sort(),
     [sortedRuns],
   )
 
@@ -430,6 +470,12 @@ function DashboardInner() {
   const runsError = runsQuery.isError
   const diesError = diesQuery.isError
   const dies = diesQuery.data ?? []
+
+  const diePassStats = useMemo(() => {
+    if (!dies.length) return null
+    const pass = dies.filter((d) => d.pass_fail).length
+    return { pass, total: dies.length }
+  }, [dies])
 
   const delay = (ms: number): CSSProperties =>
     ({ '--enter-delay': `${ms}ms` }) as CSSProperties
@@ -505,61 +551,127 @@ function DashboardInner() {
               ) : (
                 <>
                   <div className={styles.explorerHeader}>
-                  <span className={styles.explorerTitle}>Wafer explorer</span>
-                  <div className={styles.runNav}>
-                    <button
-                      type="button"
-                      className={`${styles.navBtn} interactive`}
-                      onClick={goPrevRun}
-                      disabled={runIndex <= 0}
-                      aria-label="Previous run"
-                    >
-                      ←
-                    </button>
-                    <RunSelector
-                      runs={sortedRuns}
-                      runIndex={runIndex}
-                      setRunIndex={(i) => setRunIndex(i)}
-                    />
-                    <button
-                      type="button"
-                      className={`${styles.navBtn} interactive`}
-                      onClick={goNextRun}
-                      disabled={runIndex >= sortedRuns.length - 1}
-                      aria-label="Next run"
-                    >
-                      →
-                    </button>
-                  </div>
-                  <div className={styles.metricPills}>
-                    {METRIC_PILLS.map((p) => (
+                    <span className={styles.explorerTitle}>Wafer explorer</span>
+                    <div className={styles.runNav}>
                       <button
-                        key={p.id}
                         type="button"
-                        className={`${styles.pill} interactive ${metric === p.id ? styles.pillActive : ''}`}
-                        onClick={() => setMetric(p.id)}
+                        className={`${styles.navBtn} interactive`}
+                        onClick={goPrevRun}
+                        disabled={runIndex <= 0}
+                        aria-label="Previous run"
                       >
-                        {p.label}
+                        ←
                       </button>
-                    ))}
+                      <RunSelector
+                        runs={sortedRuns}
+                        runIndex={runIndex}
+                        setRunIndex={(i) => setRunIndex(i)}
+                      />
+                      <button
+                        type="button"
+                        className={`${styles.navBtn} interactive`}
+                        onClick={goNextRun}
+                        disabled={runIndex >= sortedRuns.length - 1}
+                        aria-label="Next run"
+                      >
+                        →
+                      </button>
+                    </div>
+                    <div className={styles.metricPills}>
+                      {METRIC_PILLS.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className={`${styles.pill} interactive ${metric === p.id ? styles.pillActive : ''}`}
+                          onClick={() => setMetric(p.id)}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+
+                  {selectedRun && (
+                    <div className={styles.waferContext}>
+                      <div className={styles.waferMetaGrid}>
+                        <div className={styles.waferMetaChip}>
+                          <div className={styles.waferMetaChipLabel}>Tool</div>
+                          <div className={styles.waferMetaChipValue}>
+                            {displayTool(selectedRun.tool_id)}
+                          </div>
+                        </div>
+                        <div className={styles.waferMetaChip}>
+                          <div className={styles.waferMetaChipLabel}>Recipe</div>
+                          <div className={styles.waferMetaChipValue}>standard</div>
+                        </div>
+                        <div className={styles.waferMetaChip}>
+                          <div className={styles.waferMetaChipLabel}>Lot</div>
+                          <div className={styles.waferMetaChipValue}>
+                            {displayLotId(selectedRun.lot_id)}
+                          </div>
+                        </div>
+                        <div className={styles.waferMetaChip}>
+                          <div className={styles.waferMetaChipLabel}>Shift</div>
+                          <div className={styles.waferMetaChipValue}>
+                            {shiftFromTimestamp(selectedRun.timestamp)}
+                          </div>
+                        </div>
+                        <div className={styles.waferMetaChip}>
+                          <div className={styles.waferMetaChipLabel}>Timestamp</div>
+                          <div className={styles.waferMetaChipValue}>
+                            {formatRunTimestamp(selectedRun.timestamp)}
+                          </div>
+                        </div>
+                        <div className={styles.waferMetaChip}>
+                          <div className={styles.waferMetaChipLabel}>Anomaly</div>
+                          <div className={styles.waferMetaChipValue}>
+                            {selectedRun.anomaly_injected ? (
+                              <span className={styles.anomalyPill}>flagged</span>
+                            ) : (
+                              <span className={styles.anomalyNominal}>nominal</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={styles.waferYieldLine}>
+                        <span
+                          className={
+                            selectedRun.wafer_yield < 0.85
+                              ? styles.waferYieldPctWarn
+                              : styles.waferYieldPctOk
+                          }
+                        >
+                          Wafer yield: {(selectedRun.wafer_yield * 100).toFixed(1)}%
+                        </span>
+                        <span className={styles.waferYieldSep}>·</span>
+                        <span className={styles.waferYieldDies}>
+                          {diePassStats
+                            ? `passing ${diePassStats.pass}/${diePassStats.total} dies`
+                            : 'passing —/— dies'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   <div className={styles.waferBody}>
                     <div className={styles.mapCol}>
                       {selectedRun && dies.length > 0 ? (
-                        <WaferMap
-                          wafer_id={selectedRun.wafer_id}
-                          metric={metric}
-                          data={dies}
-                          onDieClick={setSelectedDie}
-                          showExclusionZone
-                        />
+                        <div className={styles.waferMapFill}>
+                          <WaferMap
+                            wafer_id={selectedRun.wafer_id}
+                            metric={metric}
+                            data={dies}
+                            onDieClick={setSelectedDie}
+                            showExclusionZone
+                          />
+                        </div>
                       ) : diesQuery.isLoading && selectedRun ? (
-                        <PanelSkeleton className="min-h-[260px] flex-1" />
+                        <div className={styles.waferMapFill}>
+                          <PanelSkeleton className="min-h-0 flex-1 border-0 bg-transparent p-0" />
+                        </div>
                       ) : (
                         <div
-                          className="flex flex-1 items-center justify-center rounded-[8px] border border-dashed p-6 text-center"
+                          className={`${styles.waferMapFill} flex items-center justify-center rounded-[8px] border border-dashed p-6 text-center`}
                           style={{
                             borderColor: 'var(--border)',
                             color: 'var(--text-muted)',
@@ -572,8 +684,6 @@ function DashboardInner() {
                           </code>
                         </div>
                       )}
-                    </div>
-                    <div className={styles.dieCol}>
                       <DieDetailCard die={selectedDie} metric={metric} />
                     </div>
                   </div>
@@ -608,7 +718,7 @@ function DashboardInner() {
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart
                       data={chartData}
-                      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                      margin={{ top: 4, right: 8, left: 0, bottom: 18 }}
                     >
                     <CartesianGrid {...chartGridProps} />
                     <XAxis
@@ -618,8 +728,8 @@ function DashboardInner() {
                       tick={chartTickProps}
                       label={{
                         value: 'Run index',
-                        position: 'insideBottom',
-                        offset: -4,
+                        position: 'bottom',
+                        offset: 8,
                         fill: 'var(--text-muted)',
                         fontSize: 11,
                       }}
@@ -691,9 +801,31 @@ function DashboardInner() {
           className={`${styles.pred} ${styles.panel} panel-enter`}
           style={delay(300)}
         >
-          <PanelErrorBoundary title="Prediction panel">
+          <PanelErrorBoundary title="Decision support panel">
             <div className={styles.panelInner}>
-              <PredictionPanel seedFromRun={selectedRun} loading={runsLoading} />
+              <div className={styles.rightPanelToggle}>
+                <button
+                  type="button"
+                  className={`${styles.toggleBtn} ${rightPanelMode === 'prediction' ? styles.toggleBtnActive : ''}`}
+                  onClick={() => setRightPanelMode('prediction')}
+                >
+                  Yield prediction
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.toggleBtn} ${rightPanelMode === 'spc' ? styles.toggleBtnActive : ''}`}
+                  onClick={() => setRightPanelMode('spc')}
+                >
+                  SPC mode
+                </button>
+              </div>
+              <div className={styles.rightPanelContent}>
+                {rightPanelMode === 'prediction' ? (
+                  <PredictionPanel seedFromRun={selectedRun} loading={runsLoading} />
+                ) : (
+                  <SPCPanel start={dateStart} end={dateEnd} tools={tools} />
+                )}
+              </div>
             </div>
           </PanelErrorBoundary>
         </section>

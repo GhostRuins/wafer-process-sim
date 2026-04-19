@@ -10,28 +10,38 @@
   display: flex;
   flex: 1;
   min-height: 0;
-  gap: 12px;
-  align-items: flex-start;
+  gap: 10px;
+  align-items: stretch;
 }
 
 .svgWrap {
   position: relative;
   flex: 1;
   min-width: 0;
-  max-height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 .svg {
   display: block;
   width: 100%;
-  max-height: min(52vh, 380px);
-  height: auto;
+  height: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
 }
 
 .legend {
   flex-shrink: 0;
   width: 100%;
-  max-width: 200px;
+  max-width: 150px;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 2px;
 }
 
 .legendTrack {
@@ -41,10 +51,34 @@
   margin-bottom: 6px;
 }
 
-.legendMeta {
+.legendMetric {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--text-muted);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.statsRow {
+  flex-shrink: 0;
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statsSep {
+  opacity: 0.45;
 }
 
 .tooltip {

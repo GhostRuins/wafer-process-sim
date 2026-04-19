@@ -5,13 +5,14 @@
   min-height: 0;
   overflow: auto;
   position: relative;
+  padding-right: 2px;
 }
 
 .head {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   flex-shrink: 0;
 }
 
@@ -26,7 +27,7 @@
 }
 
 .subtitle {
-  margin: -4px 0 10px;
+  margin: 0 0 10px;
   font-size: 11px;
   color: var(--text-muted);
 }
@@ -72,7 +73,7 @@
 }
 
 .field {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border-left: 2px solid transparent;
   border-radius: 4px;
   padding: 4px 6px;
@@ -225,7 +226,8 @@
 }
 
 .predictBtn {
-  width: 100%;
+  width: min(100%, 320px);
+  align-self: center;
   margin-top: 4px;
   padding: 10px 16px;
   border: none;
@@ -304,7 +306,8 @@
 }
 
 .optimizeBtn {
-  width: 100%;
+  width: min(100%, 320px);
+  align-self: center;
   margin-top: 4px;
   padding: 10px 16px;
   border: none;
@@ -481,8 +484,8 @@
 }
 
 .result {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 

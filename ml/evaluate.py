@@ -1,22 +1,20 @@
 """Evaluate a saved yield ensemble on a wafer_summary parquet file."""
+from __future__ import annotations
+
 import os
 plots_dir = os.path.join("ml", "plots")
 os.makedirs(plots_dir, exist_ok=True)
-
-from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, roc_auc_score
 
 from ml.feature_engineering import FeatureEngineeringPipeline
-from ml.yield_model import YieldEnsemble, load_ensemble
-import numpy as np
-import argparse
-from pathlib import Path
+from ml.yield_model import load_ensemble
 
 def _rmse(y: np.ndarray, p: np.ndarray) -> float:
     return float(np.sqrt(mean_squared_error(y, p)))

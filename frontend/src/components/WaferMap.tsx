@@ -1,4 +1,11 @@
-import { type ReactElement, useCallback, useId, useMemo, useState } from 'react'
+import {
+  type ReactElement,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import {
   type ColorScaleName,
@@ -55,12 +62,10 @@ export interface WaferMapProps {
   data: DieData[]
   colorScale?: ColorScaleName
   showExclusionZone?: boolean
-  onDieClick?: (die: DieData) => void
+  onDieClick?: (die: DieData | null) => void
 }
 
-const R = 180
-const CX = 200
-const CY = 200
+const FALLBACK_VB = 400
 
 export function WaferMap({
   wafer_id,
@@ -72,12 +77,28 @@ export function WaferMap({
 }: WaferMapProps) {
   const clipId = useId()
   const hatchId = useId()
-  const [hover, setHover] = useState<DieData | null>(null)
-  const [hoverKey, setHoverKey] = useState<string | null>(null)
-  const [tipPos, setTipPos] = useState<{ x: number; y: number }>({
-    x: 0,
-    y: 0,
-  })
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const [vb, setVb] = useState(FALLBACK_VB)
+
+  useLayoutEffect(() => {
+    const el = wrapRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+
+    const update = () => {
+      const r = el.getBoundingClientRect()
+      const d = Math.floor(Math.max(64, Math.min(r.width, r.height)))
+      setVb((prev) => (prev === d ? prev : d))
+    }
+
+    update()
+    const ro = new ResizeObserver(() => update())
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const cx = vb / 2
+  const cy = vb / 2
+  const R = (vb / 2) * 0.9
 
   const { vals, normalizedDies, dieSizePx } = useMemo(() => {
     const vals = data.map((d) => metricValue(d, metric))
@@ -96,11 +117,21 @@ export function WaferMap({
     const inferredGrid = Math.max(1, Math.round(Math.sqrt(data.length || 1)))
     const dieSizePx = (2 * R) / inferredGrid
     return { vals, normalizedDies, dieSizePx }
-  }, [data, metric])
+  }, [data, metric, R])
 
-  const { min, max } = useMemo(() => {
-    if (vals.length === 0) return { min: 0, max: 1 }
-    return { min: Math.min(...vals), max: Math.max(...vals) }
+  const { min, max, mean, stdev } = useMemo(() => {
+    if (vals.length === 0) {
+      return { min: 0, max: 1, mean: 0, stdev: 0 }
+    }
+    const min = Math.min(...vals)
+    const max = Math.max(...vals)
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length
+    const v =
+      vals.length > 1
+        ? vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length
+        : 0
+    const stdev = Math.sqrt(v)
+    return { min, max, mean, stdev }
   }, [vals])
 
   const colorFor = useMemo(
@@ -108,56 +139,37 @@ export function WaferMap({
     [colorScale, min, max],
   )
 
-  const onSvgPointer = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (!hover) return
-    setTipPos({ x: e.clientX + 14, y: e.clientY + 10 })
-  }, [hover])
-
   const cells = useMemo(() => {
     const out: ReactElement[] = []
     for (const item of normalizedDies) {
       const die = item.die
       const v = metricValue(die, metric)
       const fill = colorFor(v)
-      const key = item.key
-      const dieCx = CX + item.xNorm * R
-      const dieCy = CY + item.yNorm * R
+      const dieCx = cx + item.xNorm * R
+      const dieCy = cy + item.yNorm * R
       const left = dieCx - dieSizePx / 2
       const top = dieCy - dieSizePx / 2
-      const sc = hoverKey === key ? 1.4 : 1
       out.push(
         <g
-          key={key}
-          transform={`translate(${dieCx},${dieCy}) scale(${sc}) translate(${-dieCx},${-dieCy})`}
-          style={{ transition: 'transform 150ms ease' }}
+          key={item.key}
+          transform={`translate(${dieCx},${dieCy})`}
         >
           <rect
-            x={left}
-            y={top}
+            x={left - dieCx}
+            y={top - dieCy}
             width={dieSizePx}
             height={dieSizePx}
             fill={fill}
             stroke="var(--bg-primary)"
             strokeWidth={0.5}
             className="cursor-pointer interactive"
-            onPointerEnter={(e) => {
-              setHover(die)
-              setHoverKey(key)
-              setTipPos({ x: e.clientX + 14, y: e.clientY + 10 })
-            }}
-            onPointerLeave={() => {
-              setHover(null)
-              setHoverKey(null)
-            }}
-            onPointerMove={(e) => {
-              setTipPos({ x: e.clientX + 14, y: e.clientY + 10 })
-            }}
-            onClick={() => onDieClick?.(die)}
+            onPointerEnter={() => onDieClick?.(die)}
+            onPointerLeave={() => onDieClick?.(null)}
           />
           {!die.pass_fail && (
             <rect
-              x={left}
-              y={top}
+              x={left - dieCx}
+              y={top - dieCy}
               width={dieSizePx}
               height={dieSizePx}
               fill={`url(#${hatchId})`}
@@ -175,11 +187,10 @@ export function WaferMap({
     metric,
     onDieClick,
     hatchId,
-    hoverKey,
+    cx,
+    cy,
+    R,
   ])
-
-  const mean =
-    vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
 
   const legendCss = useMemo(() => {
     const n = 24
@@ -194,25 +205,18 @@ export function WaferMap({
 
   return (
     <div className={styles.root}>
-      <p
-        className="font-mono text-[10px] text-[var(--text-muted)]"
-        style={{ fontFamily: 'var(--font-mono)' }}
-      >
-        {wafer_id}
-      </p>
-
       <div className={styles.mapRow}>
-        <div className={styles.svgWrap}>
+        <div ref={wrapRef} className={styles.svgWrap}>
           <svg
-            viewBox="0 0 400 400"
+            viewBox={`0 0 ${vb} ${vb}`}
+            preserveAspectRatio="xMidYMid meet"
             className={styles.svg}
             role="img"
             aria-label={`Wafer map for ${wafer_id}`}
-            onPointerMove={onSvgPointer}
           >
             <defs>
               <clipPath id={clipId}>
-                <circle cx={CX} cy={CY} r={R} />
+                <circle cx={cx} cy={cy} r={R} />
               </clipPath>
               <pattern
                 id={hatchId}
@@ -230,8 +234,8 @@ export function WaferMap({
             </defs>
 
             <circle
-              cx={CX}
-              cy={CY}
+              cx={cx}
+              cy={cy}
               r={R}
               fill="var(--bg-primary)"
               stroke="var(--border)"
@@ -240,8 +244,8 @@ export function WaferMap({
             <g clipPath={`url(#${clipId})`}>{cells}</g>
             {showExclusionZone && (
               <circle
-                cx={CX}
-                cy={CY}
+                cx={cx}
+                cy={cy}
                 r={R * 0.85}
                 fill="none"
                 stroke="var(--text-muted)"
@@ -258,58 +262,19 @@ export function WaferMap({
             className={styles.legendTrack}
             style={{ background: legendCss }}
           />
-          <p className={styles.legendMeta}>
-            min {min.toFixed(3)} · max {max.toFixed(3)} · μ {mean.toFixed(3)}
-          </p>
+          <p className={styles.legendMetric}>{METRIC_LABEL[metric]}</p>
         </div>
       </div>
 
-      {hover && (
-        <div
-          className={styles.tooltip}
-          style={{
-            left: tipPos.x,
-            top: tipPos.y,
-            transform: 'translate(0, 0)',
-          }}
-        >
-          <div className={styles.tooltipRow}>
-            <span style={{ color: 'var(--text-muted)' }}>Die</span>
-            <span>
-              ({hover.x}, {hover.y})
-            </span>
-          </div>
-          <div className={styles.tooltipRow}>
-            <span style={{ color: 'var(--text-muted)' }}>Pass / fail</span>
-            <span
-              className={`${styles.badge} ${hover.pass_fail ? styles.badgePass : styles.badgeFail}`}
-            >
-              {hover.pass_fail ? 'PASS' : 'FAIL'}
-            </span>
-          </div>
-          <div className={styles.tooltipRow}>
-            <span style={{ color: 'var(--text-muted)' }}>Thickness</span>
-            <span>{hover.film_thickness.toFixed(2)} nm</span>
-          </div>
-          <div className={styles.tooltipRow}>
-            <span style={{ color: 'var(--text-muted)' }}>Defect</span>
-            <span>{hover.defect_density.toFixed(5)}</span>
-          </div>
-          <div className={styles.tooltipRow}>
-            <span style={{ color: 'var(--text-muted)' }}>Yield</span>
-            <span>{(hover.die_yield * 100).toFixed(2)}%</span>
-          </div>
-          <div
-            className={styles.tooltipRow}
-            style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 6 }}
-          >
-            <span style={{ color: 'var(--text-muted)' }}>Map metric</span>
-            <span style={{ color: 'var(--accent-teal)' }}>
-              {METRIC_LABEL[metric]}
-            </span>
-          </div>
-        </div>
-      )}
+      <div className={styles.statsRow} aria-label="Map metric statistics">
+        <span>min {min.toFixed(3)}</span>
+        <span className={styles.statsSep}>·</span>
+        <span>max {max.toFixed(3)}</span>
+        <span className={styles.statsSep}>·</span>
+        <span>μ {mean.toFixed(3)}</span>
+        <span className={styles.statsSep}>·</span>
+        <span>σ {stdev.toFixed(3)}</span>
+      </div>
     </div>
   )
 }
