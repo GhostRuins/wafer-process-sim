@@ -37,8 +37,8 @@ Metrics from `ml/artifacts/model_metrics.json`:
 Key finding: the lot-stratified vs random CV gap is only `0.0014`, confirming the model learned process physics rather than memorizing lot-specific artifacts.
 
 ## Dashboard Features
-<a href="docs/images/dashboard_hq.png">
-  <img src="docs/images/dashboard_hq.png" alt="Wafer dashboard" width="1400" />
+<a href="docs/images/dashboard_2026.png">
+  <img src="docs/images/dashboard_2026.png" alt="Wafer dashboard" width="1400" />
 </a>
 
 - KPI bar with average yield, total runs, best tool, active anomalies, and date range filtering
