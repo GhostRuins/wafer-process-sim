@@ -1,5 +1,7 @@
 # Wafer Process Simulation & Yield Prediction
 
+Repository: [github.com/GhostRuins/wafer-process-sim](https://github.com/GhostRuins/wafer-process-sim)
+
 ## Overview
 Wafer is an end to end semiconductor process simulation and analytics platform that combines a physics based synthetic data generator, a constrained machine learning ensemble, and production style serving interfaces. It models CVD process behavior at wafer and die level, generates realistic manufacturing datasets, and predicts wafer yield with calibrated uncertainty for decision support.
 
@@ -41,12 +43,21 @@ Key finding: the lot-stratified vs random CV gap is only `0.0014`, confirming th
   <img src="docs/images/dashboard_2026.png" alt="Wafer dashboard" width="1400" />
 </a>
 
-- KPI bar with average yield, total runs, best tool, active anomalies, and date range filtering
-- Interactive wafer map with metric toggles for thickness, defect density, and die yield
-- Yield trend panel with anomaly markers, 10-run moving average, and zoom brush
-- Correlation matrix for process parameter relationships to yield
-- Prediction panel with scenario inputs, ensemble forecast, confidence interval, and explainability context
-- Run explorer with lot/tool navigation and CSV export
+**Layout (main grid)**
+
+- **KPI bar**: average yield (today), total runs, best tool, worst die cluster, active anomalies, date range, CSV export, guided tour entry.
+- **Wafer explorer**: run selector, wafer die map (thickness / defect / yield), edge exclusion ring, die detail card.
+- **Yield trend**: per-run yield scatter, tool coloring, 10-run moving average, brush zoom.
+- **Correlation matrix**: parameter–yield relationships with drill-down.
+- **Right panel (toggle)**
+  - **Yield prediction**: process sliders, tool choice, predict / optimize flows, ensemble yield + CI, optional SHAP-style contribution chart when the API returns it.
+  - **SPC mode**: Nelson-rule SPC chart (batch or live WebSocket replay), alert feed, and **process capability** below the chart (see next section). Scroll the right panel if the chart fills the viewport—the capability block sits under *Total points / Violations*.
+
+**Process capability (SPC mode)**
+
+- Per-parameter **`Cp`**, **`Cpk`**, **`Pp`**, **`Ppk`** computed from `/api/process-runs` over the **same date range as the KPI bar**.
+- **Recipe limits**: engineering bounds + LSL/USL/target live in [`frontend/src/config/processSpecs.ts`](frontend/src/config/processSpecs.ts); math in [`frontend/src/utils/capability.ts`](frontend/src/utils/capability.ts).
+- **Tool scope**: *All tools* (pooled runs) or *SPC tool filter* (matches the tool dropdown on the SPC chart; required for tool-only capability).
 
 ## SPC Engine (Batch + Live Stream)
 - **Batch analysis** via `POST /api/spc/analyze` with Nelson rules + EWMA outputs.
@@ -69,11 +80,18 @@ curl "http://localhost:8000/api/spc/stream/state"
 
 Open the dashboard, switch the right panel to **SPC mode**, choose **Stream**, then use the playback bar to run and control live replay.
 
+### Process capability (control vs spec)
+SPC answers whether the process is **stable** relative to control limits derived from the data stream. **Capability indices** answer whether a stable process **fits the engineering spec** (LSL/USL) with margin.
+
+- **Cp / Cpk** use short-term variation: here, `σ_within` from the average moving range of consecutive runs (ordered by timestamp), `σ_MR / d₂` with `d₂ = 1.128` for subgroup size two.
+- **Pp / Ppk** use long-term variation: sample standard deviation across all runs in the selected scope.
+- **Tool scope**: *All tools* pools runs for a line-level view; *SPC tool filter* restricts to the tool chosen in the SPC chart dropdown (required for tool-scoped capability).
+
 ## Setup
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
-   cd Wafer
+   git clone https://github.com/GhostRuins/wafer-process-sim.git
+   cd wafer-process-sim
    ```
 2. **Create and activate a Python environment**
    ```bash
@@ -105,6 +123,25 @@ Open the dashboard, switch the right panel to **SPC mode**, choose **Stream**, t
    npm install
    npm run dev
    ```
+
+   The UI defaults the API base to `http://<your-host>:8000`. To override (different host or port), set `VITE_API_URL` before `npm run dev` (see [frontend/README.md](frontend/README.md)).
+
+### Makefile shortcuts
+From the repo root (requires `make` and the same venv activated):
+
+| Target | Command |
+|--------|---------|
+| Generate data | `make generate` |
+| Train models | `make train` |
+| API server | `make api` |
+| Frontend dev | `make frontend` |
+
+### Docker Compose
+Build and run API + Vite dev server in containers (API on **8000**, UI on **3000**):
+
+```bash
+docker compose up --build
+```
 
 ## Design Decisions
 Lot-stratified cross validation is used instead of random CV because semiconductor runs within a lot can share hidden correlations from common chamber state, wafer ordering effects, and short-term drift. Random splitting often leaks this structure across folds and inflates offline metrics. Grouping by lot forces the model to generalize across fabrication batches, which better matches deployment risk.

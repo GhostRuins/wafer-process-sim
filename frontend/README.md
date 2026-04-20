@@ -1,73 +1,46 @@
-# React + TypeScript + Vite
+# Wafer dashboard (React + TypeScript + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Single-page dashboard for the **Wafer** stack: wafer map, yield trends, correlations, ML yield prediction, and **SPC + process capability**. Parent project docs: [../README.md](../README.md).
 
-Currently, two official plugins are available:
+## Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node 20+ recommended (matches `docker-compose` frontend image).
+- FastAPI backend on port **8000** unless you override the client base URL (see below).
 
-## React Compiler
+## Scripts
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Command | Purpose |
+|---------|---------|
+| `npm install` | Install dependencies |
+| `npm run dev` | Vite dev server (default [http://localhost:5173](http://localhost:5173)) |
+| `npm run build` | Typecheck + production build to `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | ESLint |
 
-## Expanding the ESLint configuration
+## API base URL
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+By default the client uses `http://<browser-hostname>:8000` (see [`src/config.ts`](src/config.ts)). If the API runs elsewhere, set before `npm run dev`:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```bash
+# Windows (cmd)
+set VITE_API_URL=http://127.0.0.1:8000
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Windows (PowerShell) / macOS / Linux
+export VITE_API_URL=http://127.0.0.1:8000
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Notable source locations
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Area | Path |
+|------|------|
+| Main dashboard layout | [`src/pages/Dashboard.tsx`](src/pages/Dashboard.tsx) |
+| SPC chart + capability strip | [`src/components/SPCPanel.tsx`](src/components/SPCPanel.tsx) |
+| Capability UI | [`src/components/CapabilityPanel.tsx`](src/components/CapabilityPanel.tsx) |
+| Recipe LSL/USL / engineering limits | [`src/config/processSpecs.ts`](src/config/processSpecs.ts) |
+| Cp / Cpk / Pp / Ppk math | [`src/utils/capability.ts`](src/utils/capability.ts) |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+**Where to see capability in the UI:** open the right panel → **SPC mode** → scroll below the control chart and the “Total points / Violations” line to **Process capability**.
+
+## Generic Vite template
+
+This app was bootstrapped with Vite. For upstream Vite, React, and ESLint configuration docs, see [https://vite.dev](https://vite.dev) and the [React documentation](https://react.dev).

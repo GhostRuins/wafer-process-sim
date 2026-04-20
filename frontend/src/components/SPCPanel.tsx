@@ -11,7 +11,9 @@ import {
   YAxis,
 } from 'recharts'
 
+import { CapabilityPanel } from './CapabilityPanel'
 import { useSpcData, type SpcMetric, type SpcMode, type SpcReplaySpeed } from '../hooks/useSpcData'
+import type { ProcessRun } from '../hooks/useWaferData'
 import { chartGridProps, chartTickProps } from '../styles/chartTheme'
 import styles from '../pages/Dashboard.module.css'
 
@@ -46,7 +48,19 @@ const formatMetricValue = (value: number | null | undefined, metric: SpcMetric):
   }
 }
 
-export function SPCPanel({ start, end, tools }: { start: string; end: string; tools: string[] }) {
+export function SPCPanel({
+  start,
+  end,
+  tools,
+  runs,
+  runsLoading,
+}: {
+  start: string
+  end: string
+  tools: string[]
+  runs: ProcessRun[]
+  runsLoading: boolean
+}) {
   const [metric, setMetric] = useState<SpcMetric>('wafer_yield')
   const [mode, setMode] = useState<SpcMode>('batch')
   const [replaySpeed, setReplaySpeed] = useState<SpcReplaySpeed>('1x')
@@ -292,6 +306,15 @@ export function SPCPanel({ start, end, tools }: { start: string; end: string; to
         <span>Violations: {summary?.total_violations ?? violations.length}</span>
         {summary?.f1 !== undefined && summary.f1 !== null && <span>F1: {summary.f1.toFixed(3)}</span>}
       </div>
+
+      <CapabilityPanel
+        runs={runs}
+        loading={runsLoading}
+        dateStart={start}
+        dateEnd={end}
+        spcToolFilter={toolId}
+      />
+
       <div className={styles.spcAlerts}>
         <h4 className={styles.panelSubtitle}>Alert feed</h4>
         {violations.slice(0, 20).map((v, idx) => (

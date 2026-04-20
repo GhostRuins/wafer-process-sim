@@ -823,7 +823,13 @@ function DashboardInner() {
                 {rightPanelMode === 'prediction' ? (
                   <PredictionPanel seedFromRun={selectedRun} loading={runsLoading} />
                 ) : (
-                  <SPCPanel start={dateStart} end={dateEnd} tools={tools} />
+                  <SPCPanel
+                    start={dateStart}
+                    end={dateEnd}
+                    tools={tools}
+                    runs={sortedRuns}
+                    runsLoading={runsLoading}
+                  />
                 )}
               </div>
             </div>
