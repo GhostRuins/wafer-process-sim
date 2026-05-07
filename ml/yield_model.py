@@ -25,6 +25,7 @@ from ml.feature_engineering import (
 )
 from ml.monotonicity import MonotonicityViolationWarning
 from ml.uncertainty import combine_confidence_intervals, pass_probability_gaussian
+from wafer_sim.fdc import FDCFeatureAugmentor
 
 
 def _lgb_matrix(X: np.ndarray) -> np.ndarray:
@@ -71,6 +72,9 @@ class YieldPrediction(pydantic.BaseModel):
     top_risk_factor: str
     risk_flags: list[RiskFlag]
     model_agreement: float
+    spc_alerts_active: bool = False
+    spc_severity: float = 0.0
+    spc_alert_count: int = 0
 
 
 @dataclass
@@ -160,6 +164,7 @@ class YieldEnsemble:
 
 
 _GLOBAL_ENSEMBLE: YieldEnsemble | None = None
+_GLOBAL_FDC_AUGMENTOR = FDCFeatureAugmentor()
 
 
 def load_ensemble(artifacts_dir: Path | str) -> YieldEnsemble:
@@ -252,6 +257,17 @@ def predict_yield(
         recipe_id=recipe_id,
         shift=shift,
     )
+    spc_inputs = {
+        "temperature": float(params.temperature_c),
+        "pressure": float(params.pressure_mtorr),
+        "gas_flow": float(params.gas_flow_sccm),
+        "rf_power": float(params.rf_power_w),
+        "deposition_time": float(params.deposition_time_s),
+    }
+    spc_augmented = _GLOBAL_FDC_AUGMENTOR.augment(spc_inputs)
+    for k, v in spc_augmented.items():
+        if k.startswith("spc_"):
+            df[k] = float(v)
     X = ens.feature_pipe.transform(df)
     wide = ens.feature_pipe.get_dataframe(df)
     X_gp = ens.feature_pipe.transform_gp(df)
@@ -311,6 +327,9 @@ def predict_yield(
         top_risk_factor=top_risk,
         risk_flags=flags,
         model_agreement=agreement,
+        spc_alerts_active=bool(_GLOBAL_FDC_AUGMENTOR.last_summary["spc_alerts_active"]),
+        spc_severity=float(_GLOBAL_FDC_AUGMENTOR.last_summary["spc_severity"]),
+        spc_alert_count=int(_GLOBAL_FDC_AUGMENTOR.last_summary["spc_alert_count"]),
     )
     med_log_dd = getattr(
         ens.feature_pipe.training_stats,

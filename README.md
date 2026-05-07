@@ -65,6 +65,20 @@ Key finding: the lot-stratified vs random CV gap is only `0.0014`, confirming th
 - **Supported stream controls**: play, pause, stop, replay, and speed changes (`0.5x`, `1x`, `5x`, `10x`, `Max`) without restarting the server.
 - **Stream payloads** are JSON-safe (datetime and numpy values normalized before transport).
 
+## FDC SPC-ML Integration
+- **Stateful SPC feature augmentation** is now part of both training and online inference via `wafer_sim/fdc/feature_augmentor.py`.
+- **Western Electric rules** are evaluated per process parameter (`temperature`, `pressure`, `gas_flow`, `rf_power`, `deposition_time`) using a rolling control window (`SPCEngine`, default 25 points).
+- **Augmented ML features** include:
+  - `spc_alert_<param>` binary flags
+  - `spc_alert_count`
+  - `spc_severity_score`
+- **Training flow**: rows are sorted by `timestamp` (and `run_id` if present), then SPC features are simulated sequentially before model fitting.
+- **Inference/API flow**: `/api/predict` now returns SPC summary fields alongside yield prediction:
+  - `spc_alerts_active`
+  - `spc_severity`
+  - `spc_alert_count`
+- **Dashboard behavior**: prediction panel renders an SPC alert badge when active (amber for lower severity, red for higher severity).
+
 ### Quick API examples
 Run batch SPC analysis:
 ```bash

@@ -44,6 +44,13 @@ NUMERIC_FEATURE_NAMES: list[str] = [
     "defect_spatial_range",
     "runs_since_pm",
     "is_post_pm",
+    "spc_alert_temperature",
+    "spc_alert_pressure",
+    "spc_alert_gas_flow",
+    "spc_alert_rf_power",
+    "spc_alert_deposition_time",
+    "spc_alert_count",
+    "spc_severity_score",
 ]
 
 CATEGORICAL_FEATURE_NAMES: list[str] = ["tool_id", "recipe_id", "shift"]
@@ -197,6 +204,18 @@ def build_engineered_frame(df: pd.DataFrame) -> pd.DataFrame:
     trc = out["tool_run_count"].astype(np.int64)
     out["runs_since_pm"] = trc % 150
     out["is_post_pm"] = (out["runs_since_pm"] < 3).astype(np.float64)
+
+    for c in [
+        "spc_alert_temperature",
+        "spc_alert_pressure",
+        "spc_alert_gas_flow",
+        "spc_alert_rf_power",
+        "spc_alert_deposition_time",
+        "spc_alert_count",
+        "spc_severity_score",
+    ]:
+        if c not in out.columns:
+            out[c] = 0.0
 
     for c in CATEGORICAL_FEATURE_NAMES:
         out[c] = out[c].astype(str)

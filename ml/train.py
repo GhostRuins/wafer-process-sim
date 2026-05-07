@@ -40,6 +40,7 @@ from ml.uncertainty import (
     reliability_diagram_data,
 )
 from ml.yield_model import YieldEnsemble, _lgb_matrix
+from wafer_sim.fdc import FDCFeatureAugmentor
 
 
 def _rmse(y: np.ndarray, p: np.ndarray) -> float:
@@ -461,7 +462,16 @@ def run_training(
     plots_dir.mkdir(parents=True, exist_ok=True)
 
     df = pd.read_parquet(data_path)
-    df = df.sort_values("timestamp").reset_index(drop=True)
+    sort_cols = ["timestamp"] + (["run_id"] if "run_id" in df.columns else [])
+    df = df.sort_values(sort_cols).reset_index(drop=True)
+    augmentor = FDCFeatureAugmentor()
+    spc_source_cols = ["temperature", "pressure", "gas_flow", "rf_power", "deposition_time"]
+    for idx in df.index:
+        row_params = {k: float(df.at[idx, k]) for k in spc_source_cols}
+        augmented = augmentor.augment(row_params)
+        for k, v in augmented.items():
+            if k.startswith("spc_"):
+                df.at[idx, k] = float(v)
     n = len(df)
     split = max(int(n * 0.8), 2)
     train_df = df.iloc[:split].copy()

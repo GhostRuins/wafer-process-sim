@@ -33,6 +33,9 @@ class YieldPrediction(BaseModel):
     confidence_interval: tuple[float, float]
     shap_breakdown: dict[str, float]
     risk_flags: list[str]
+    spc_alerts_active: bool = False
+    spc_severity: float = 0.0
+    spc_alert_count: int = 0
 
     class Config:
         json_schema_extra = {
@@ -41,6 +44,9 @@ class YieldPrediction(BaseModel):
                 "confidence_interval": [0.901, 0.941],
                 "shap_breakdown": {"temperature": 0.012, "gas_flow": -0.018},
                 "risk_flags": ["gas_flow_high"],
+                "spc_alerts_active": True,
+                "spc_severity": 1.0,
+                "spc_alert_count": 2,
             }
         }
 

@@ -59,6 +59,9 @@ async def test_predict_without_model_is_503(client: AsyncClient):
         body = r.json()
         assert "predicted_yield" in body
         assert "confidence_interval" in body
+        assert "spc_alerts_active" in body
+        assert "spc_severity" in body
+        assert "spc_alert_count" in body
     else:
         assert r.status_code == 503
 

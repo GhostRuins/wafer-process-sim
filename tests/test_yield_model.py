@@ -64,6 +64,21 @@ def test_lot_cv_and_temporal_r2(trained_artifacts: Path) -> None:
     assert m["temporal_holdout"]["r2"] > 0.75
 
 
+def test_feature_names_include_spc_columns(trained_artifacts: Path) -> None:
+    payload = json.loads((trained_artifacts / "feature_names.json").read_text(encoding="utf-8"))
+    feats = payload["all_features"]
+    for col in [
+        "spc_alert_temperature",
+        "spc_alert_pressure",
+        "spc_alert_gas_flow",
+        "spc_alert_rf_power",
+        "spc_alert_deposition_time",
+        "spc_alert_count",
+        "spc_severity_score",
+    ]:
+        assert col in feats
+
+
 def test_xgboost_monotonicity_baseline(trained_artifacts: Path) -> None:
     ens = load_ensemble(trained_artifacts)
     fe: FeatureEngineeringPipeline = ens.feature_pipe
@@ -140,6 +155,16 @@ def test_pre_vs_post_ci_width(trained_artifacts: Path) -> None:
     )
     post = predict_yield(p, ws, return_shap=False, ensemble=ens, tool_run_count=50, lot_position=5)
     assert post.ci_width <= pre.ci_width + 1e-6
+
+
+def test_predict_yield_exposes_spc_summary(trained_artifacts: Path) -> None:
+    ens = load_ensemble(trained_artifacts)
+    p = ProcessParams(400.0, 50.0, 80.0, 200.0, 120.0, 0)
+    pred = predict_yield(p, None, return_shap=False, ensemble=ens)
+    assert isinstance(pred.spc_alerts_active, bool)
+    assert isinstance(pred.spc_alert_count, int)
+    assert pred.spc_alert_count >= 0
+    assert pred.spc_severity >= 0.0
 
 
 def test_risk_flags_out_of_bounds(trained_artifacts: Path) -> None:

@@ -28,4 +28,7 @@ async def predict(body: ProcessParams, state: AppStateDep) -> YieldPrediction:
         confidence_interval=out.confidence_interval,
         shap_breakdown=out.shap_breakdown or {},
         risk_flags=flags,
+        spc_alerts_active=out.spc_alerts_active,
+        spc_severity=out.spc_severity,
+        spc_alert_count=out.spc_alert_count,
     )

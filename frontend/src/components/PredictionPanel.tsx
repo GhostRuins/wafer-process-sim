@@ -621,6 +621,15 @@ export function PredictionPanel({
               {data.predicted_yield >= 0.9 ? 'PASS TARGET' : 'BELOW TARGET'}
             </span>
           </div>
+          {data.spc_alerts_active && (
+            <div className={styles.badgeRow}>
+              <span
+                className={`${styles.spcBadge} ${data.spc_severity < 1.5 ? styles.spcWarn : styles.spcCrit}`}
+              >
+                ⚠ SPC Alert — {data.spc_alert_count} parameter(s) out of control
+              </span>
+            </div>
+          )}
 
           {data.risk_flags.length > 0 && (
             <div className={styles.riskRow}>

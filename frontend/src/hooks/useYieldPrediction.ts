@@ -32,6 +32,9 @@ export interface PredictResponse {
   /** Optional SHAP baseline (E[f(x)]) for waterfall start */
   expected_value?: number
   risk_flags: string[]
+  spc_alerts_active: boolean
+  spc_severity: number
+  spc_alert_count: number
   parameter_bounds?: Partial<
     Record<
       | 'temperature'
@@ -49,6 +52,9 @@ interface ApiYieldPrediction {
   confidence_interval: [number, number]
   shap_breakdown: Record<string, number>
   risk_flags: string[]
+  spc_alerts_active?: boolean
+  spc_severity?: number
+  spc_alert_count?: number
 }
 
 async function postPredict(body: PredictRequest): Promise<PredictResponse> {
@@ -72,6 +78,9 @@ async function postPredict(body: PredictRequest): Promise<PredictResponse> {
     ci_high: hi,
     shap_values,
     risk_flags: json.risk_flags ?? [],
+    spc_alerts_active: Boolean(json.spc_alerts_active),
+    spc_severity: Number(json.spc_severity ?? 0),
+    spc_alert_count: Number(json.spc_alert_count ?? 0),
   }
 }
 
