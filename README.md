@@ -66,18 +66,31 @@ Key finding: the lot-stratified vs random CV gap is only `0.0014`, confirming th
 - **Stream payloads** are JSON-safe (datetime and numpy values normalized before transport).
 
 ## FDC SPC-ML Integration
-- **Stateful SPC feature augmentation** is now part of both training and online inference via `wafer_sim/fdc/feature_augmentor.py`.
-- **Western Electric rules** are evaluated per process parameter (`temperature`, `pressure`, `gas_flow`, `rf_power`, `deposition_time`) using a rolling control window (`SPCEngine`, default 25 points).
+- **New FDC package**: `wafer_sim/fdc/` now contains:
+  - `spc_engine.py` (`SPCAlert` + `SPCEngine`)
+  - `feature_augmentor.py` (`FDCFeatureAugmentor`)
+  - `__init__.py` exports
+- **Stateful SPC feature augmentation** is now part of both training and online inference via `FDCFeatureAugmentor`.
+- **Western Electric rules** are evaluated per process parameter (`temperature`, `pressure`, `gas_flow`, `rf_power`, `deposition_time`) using a rolling control window (`SPCEngine`, default 25 points):
+  - Rule 1: single point beyond `3σ` (severity `2`)
+  - Rule 2: `9` consecutive points on one side of mean (severity `1`)
+  - Rule 3: `6` consecutive monotone points (severity `1`)
+  - Rule 4: `2` of `3` consecutive points beyond `2σ` (severity `1`)
 - **Augmented ML features** include:
   - `spc_alert_<param>` binary flags
   - `spc_alert_count`
   - `spc_severity_score`
-- **Training flow**: rows are sorted by `timestamp` (and `run_id` if present), then SPC features are simulated sequentially before model fitting.
+- **Feature registry update**: SPC columns are included in `ml/feature_engineering.py` (`NUMERIC_FEATURE_NAMES` / `ALL_FEATURE_NAMES`) and persisted to `ml/artifacts/feature_names.json`.
+- **Training flow**: rows are sorted by `timestamp` (and `run_id` if present), then SPC features are simulated sequentially before model fitting in `ml/train.py`.
 - **Inference/API flow**: `/api/predict` now returns SPC summary fields alongside yield prediction:
   - `spc_alerts_active`
   - `spc_severity`
   - `spc_alert_count`
-- **Dashboard behavior**: prediction panel renders an SPC alert badge when active (amber for lower severity, red for higher severity).
+- **Schema and response contract**: backend response model and endpoint mapping were updated in `api/schemas.py` and `api/routers/prediction.py`.
+- **Dashboard behavior**: prediction panel renders an SPC alert badge when active (amber for lower severity, red for higher severity), wired through `frontend/src/hooks/useYieldPrediction.ts` and `frontend/src/components/PredictionPanel.tsx`.
+- **Tests added**:
+  - `tests/test_yield_model.py` verifies SPC features are written to `feature_names.json` and prediction exposes SPC summary.
+  - `tests/test_api.py` verifies `/api/predict` includes SPC fields when model inference is available.
 
 ### Quick API examples
 Run batch SPC analysis:
